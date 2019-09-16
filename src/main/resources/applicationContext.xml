@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <!-- 开启使用注解-->
+    <context:component-scan base-package="com.springmvc"/>
+
+    <bean id="propertyConfigurer" class="com.springmvc.common.MyPlaceHolder">
+        <property name="locations">
+            <list>
+                <value>classpath:jdbc.properties</value>
+                <value>classpath:redis.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--mq配置-->
+
+    <!-- ActiveMq连接工厂 -->
+    <bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="tcp://127.0.0.1:61616"/>
+        <property name="userName" value="admin"></property>
+        <property name="password" value="admin"></property>
+    </bean>
+
+    <!-- 连接池工厂，使用ActiveMQ连接工厂  -->
+    <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory">
+        <property name="connectionFactory" ref="targetConnectionFactory" />
+        <property name="maxConnections" value="100" />
+    </bean>
+
+    <!-- 单连接工厂 ,使用连接池 -->
+    <bean id="mqConnectionFactory" class="org.springframework.jms.connection.SingleConnectionFactory">
+        <!-- 目标ConnectionFactory对应真实的可以产生JMS Connection的ConnectionFactory -->
+        <property name="targetConnectionFactory" ref="pooledConnectionFactory" />
+    </bean>
+
+    <!-- ActiveJms -->
+    <bean id="activeMqJmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <!-- 这个connectionFactory对应的是我们定义的Spring提供的那个ConnectionFactory对象 -->
+        <property name="connectionFactory" ref="mqConnectionFactory" />
+    </bean>
+
+    <bean id="queueDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg>
+            <value>propertyQueue</value>
+        </constructor-arg>
+    </bean>
+
+    <!-- 消息监听器 -->
+    <bean id="consumerMessageListener" class="com.springmvc.mq.MessageListenerImpl" />
+    <!-- 消息监听容器 -->
+    <bean id="jmsContainer"
+          class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="mqConnectionFactory" />
+        <property name="destination" ref="queueDestination" />
+        <property name="messageListener" ref="consumerMessageListener" />
+    </bean>
+</beans>
