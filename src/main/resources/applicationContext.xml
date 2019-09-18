@@ -11,21 +11,25 @@
     <context:component-scan base-package="com.springmvc"/>
 
     <bean id="propertyConfigurer" class="com.springmvc.common.MyPlaceHolder">
-        <property name="locations">
-            <list>
-                <value>classpath:jdbc.properties</value>
-                <value>classpath:redis.properties</value>
-            </list>
-        </property>
+        <!--<property name="locations">-->
+            <!--<list>-->
+                <!--<value>classpath:jdbc.properties</value>-->
+                <!--<value>classpath:redis.properties</value>-->
+                <!--<value>classpath:mq.properties</value>-->
+            <!--</list>-->
+        <!--</property>-->
+        <constructor-arg name="url" value="http://127.0.0.1:8080/server/app/property"/>
+        <constructor-arg name="environment" value="DEV"/>
+        <constructor-arg name="serviceName" value="DataService"/>
     </bean>
 
     <!--mq配置-->
 
     <!-- ActiveMq连接工厂 -->
     <bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
-        <property name="brokerURL" value="tcp://127.0.0.1:61616"/>
-        <property name="userName" value="admin"></property>
-        <property name="password" value="admin"></property>
+        <property name="brokerURL" value="${mq.url}"/>
+        <property name="userName" value="${mq.user}"></property>
+        <property name="password" value="${mq.password}"></property>
     </bean>
 
     <!-- 连接池工厂，使用ActiveMQ连接工厂  -->

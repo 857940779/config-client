@@ -1,6 +1,9 @@
 package com.springmvc.common;
 
+import com.alibaba.fastjson.JSON;
 import com.springmvc.model.PropertyDTO;
+import com.springmvc.util.HttpUtil;
+import com.springmvc.util.IPUtil;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
@@ -26,10 +29,20 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
     private static Lock readLock=lock.readLock();
     private static Lock writeLock=lock.writeLock();
 
+    private String url; //请求配置中心的地址
+    private String environment; //环境
+    private String serviceName;  //服务名称
+
     //可能出现并发修改
     private static Map<String, String> ctxPropertiesMap=new ConcurrentHashMap<>();
 
     private static ScheduledExecutorService schedule= Executors.newSingleThreadScheduledExecutor();
+
+    public MyPlaceHolder(String url,String environment,String serviceName){
+        this.url=url;
+        this.environment=environment;
+        this.serviceName=serviceName;
+    }
 
     /**
      * 重写读取完配置后的操作，把拿到的值塞到一个map中，后续所有操作都操作这个map
@@ -38,15 +51,29 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
     @Override
     protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess, Properties props)
             throws BeansException {
-        super.processProperties(beanFactoryToProcess, props);
-        ctxPropertiesMap = new HashMap<String, String>();
-        for (Object key : props.keySet()) {
-            String keyStr = key.toString();
-            String value = props.getProperty(keyStr);
-            ctxPropertiesMap.put(keyStr, value);
-        }
+        //发起http请求，去读取配置
+        Map param=new HashMap<>();
+        param.put("ip", IPUtil.getIP());
+        param.put("environment", Environment.getCodeByName(environment));
+        param.put("serviceName",serviceName);
 
-        schedule.scheduleAtFixedRate(new PropertyTask(),1,10, TimeUnit.SECONDS);
+        try {
+            String str=HttpUtil.httpGetData(url,param);
+            List<PropertyDTO> list= JSON.parseArray(str,PropertyDTO.class);
+
+            for(PropertyDTO propertyDTO:list){
+                props.setProperty(propertyDTO.getKey(),propertyDTO.getValue());
+            }
+
+            //调用父类设置，把值塞到xml或者代码中，以便使用占位符可以拿到值
+            super.processProperties(beanFactoryToProcess, props);
+
+            setProperty(list);
+            schedule.scheduleAtFixedRate(new PropertyTask(),1,10, TimeUnit.SECONDS);
+
+        } catch (Exception e) {
+            throw new PropertyException("读取配置异常，服务启动失败",e);
+        }
     }
 
     public static String getValue(String key){
@@ -106,7 +133,8 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
 
             //TODO 主动发起http请求，请求到配置中心服务器
             setValue("database.url",Math.random()+":"+Math.random()+":"+Math.random());
-            System.out.println("----refresh----");
+            System.out.println(System.currentTimeMillis()+"----refresh----");
         }
     }
+
 }
