@@ -22,6 +22,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @Author: luohanwen
  * @Date: 2019/9/12 10:27
+ *
+ * 刷新配置两种方式，定时刷新，以及监听mq实时刷新
+ * 初始化时会主动拉取一次
  */
 public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
     //会有定时刷新的功能，也会主动监听mq去刷新，估为了防止并发问题，需要使用读写锁
@@ -65,15 +68,18 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
                 props.setProperty(propertyDTO.getKey(),propertyDTO.getValue());
             }
 
-            //调用父类设置，把值塞到xml或者代码中，以便使用占位符可以拿到值
+            //调用父类设置，把值塞到占位符
             super.processProperties(beanFactoryToProcess, props);
 
             setProperty(list);
-            schedule.scheduleAtFixedRate(new PropertyTask(),1,10, TimeUnit.SECONDS);
+            //延迟半小时，然后每半小时刷新一次
+            schedule.scheduleAtFixedRate(new PropertyTask(),30*60,30*60, TimeUnit.SECONDS);
 
         } catch (Exception e) {
             throw new PropertyException("读取配置异常，服务启动失败",e);
         }
+
+        System.out.println("----------启动加载配置完成---------------");
     }
 
     public static String getValue(String key){
@@ -123,16 +129,25 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
     }
 
     /**
-     * 该task应该是全部刷新，主动拉取配置
+     * 该task是全部刷新，主动拉取配置
      */
     class PropertyTask implements Runnable{
 
         @Override
         public void run() {
-            //刷新配置两种方式，定时刷新，以及监听mq实时刷新
+            // 主动发起http请求，请求到配置中心服务器
+            Map param=new HashMap<>();
+            param.put("ip", IPUtil.getIP());
+            param.put("environment", Environment.getCodeByName(environment));
+            param.put("serviceName",serviceName);
 
-            //TODO 主动发起http请求，请求到配置中心服务器
-            setValue("database.url",Math.random()+":"+Math.random()+":"+Math.random());
+            try {
+                String str = HttpUtil.httpGetData(url, param);
+                List<PropertyDTO> list = JSON.parseArray(str, PropertyDTO.class);
+                setProperty(list);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
             System.out.println(System.currentTimeMillis()+"----refresh----");
         }
     }
