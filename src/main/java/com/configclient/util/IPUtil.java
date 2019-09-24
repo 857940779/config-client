@@ -1,4 +1,4 @@
-package com.springmvc.util;
+package com.configclient.util;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;

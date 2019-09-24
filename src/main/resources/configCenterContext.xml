@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <!-- 开启使用注解-->
+    <context:component-scan base-package="com.configclient"/>
+
+    <!--本地测试需要打开以下注释，打成jar包是不要有-->
+    <!--<bean id="propertyConfigurer" class="com.configclient.common.MyPlaceHolder">-->
+        <!--<constructor-arg name="url" value="http://127.0.0.1:8080/server/app/property"/>-->
+        <!--<constructor-arg name="environment" value="DEV"/>-->
+        <!--<constructor-arg name="serviceName" value="DataService"/>-->
+    <!--</bean>-->
+
+    <!--mq配置-->
+    <!-- ActiveMq连接工厂 -->
+    <bean id="configCenterMqConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="tcp://127.0.0.1:61616"/>
+        <property name="userName" value="admin"></property>
+        <property name="password" value="admin"></property>
+    </bean>
+
+    <!-- 连接池工厂，使用ActiveMQ连接工厂  -->
+    <bean id="configCenterpooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory">
+        <property name="connectionFactory" ref="configCenterMqConnectionFactory" />
+        <property name="maxConnections" value="100" />
+    </bean>
+
+    <!-- ActiveJms -->
+    <bean id="configMqJmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <!-- 这个connectionFactory对应的是我们定义的Spring提供的那个ConnectionFactory对象 -->
+        <property name="connectionFactory" ref="configCenterpooledConnectionFactory" />
+    </bean>
+
+    <!--如果是多queue，那么用,拼接-->
+    <bean id="configQueueDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg>
+            <value>propertyQueue</value>
+        </constructor-arg>
+    </bean>
+
+    <!--订阅topic-->
+    <bean id="configTopicDestination" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg value="propertyTopic"/>
+    </bean>
+
+
+    <!-- 消息监听器 ，监听队列 这里不同的监听器，可以配置不同的实现类-->
+    <bean id="consumerMessageListener" class="com.configclient.mq.MessageListenerImpl" />
+
+    <!-- 队列监听容器 -->
+    <bean id="configQueueContainer"
+          class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="configCenterpooledConnectionFactory" />
+        <property name="destination" ref="configQueueDestination" />
+        <property name="messageListener" ref="consumerMessageListener" />
+    </bean>
+
+    <!--topic监听容器-->
+    <bean id="configTopicContainer"
+          class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="configCenterpooledConnectionFactory" />
+        <property name="destination" ref="configTopicDestination" />
+        <property name="messageListener" ref="consumerMessageListener" />
+    </bean>
+</beans>

@@ -1,4 +1,4 @@
-package com.springmvc.common;
+package com.configclient.common;
 
 import org.springframework.beans.BeansException;
 import org.springframework.lang.Nullable;

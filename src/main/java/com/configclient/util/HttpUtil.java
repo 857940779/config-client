@@ -1,4 +1,4 @@
-package com.springmvc.util;
+package com.configclient.util;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;

@@ -1,6 +1,5 @@
-import com.springmvc.common.Environment;
-import com.springmvc.service.DataService;
-import com.springmvc.util.HttpUtil;
+import com.configclient.common.Environment;
+import com.configclient.util.HttpUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
@@ -19,7 +18,7 @@ public class HttpTest {
 
     @BeforeClass
     public static void init(){
-        ctx=new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+        ctx=new ClassPathXmlApplicationContext("classpath:configCenterContext.xml");
         System.out.println("-----------------");
     }
 

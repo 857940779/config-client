@@ -1,9 +1,9 @@
-package com.springmvc.common;
+package com.configclient.common;
 
 import com.alibaba.fastjson.JSON;
-import com.springmvc.model.PropertyDTO;
-import com.springmvc.util.HttpUtil;
-import com.springmvc.util.IPUtil;
+import com.configclient.model.PropertyDTO;
+import com.configclient.util.HttpUtil;
+import com.configclient.util.IPUtil;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
@@ -32,9 +32,9 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
     private static Lock readLock=lock.readLock();
     private static Lock writeLock=lock.writeLock();
 
-    private String url; //请求配置中心的地址
-    private String environment; //环境
-    private String serviceName;  //服务名称
+    private static String url; //请求配置中心的地址
+    private static String environment; //环境
+    private static String serviceName;  //服务名称
 
     //可能出现并发修改
     private static Map<String, String> ctxPropertiesMap=new ConcurrentHashMap<>();
@@ -80,6 +80,19 @@ public class MyPlaceHolder extends PropertyPlaceholderConfigurer {
         }
 
         System.out.println("----------启动加载配置完成---------------");
+    }
+
+    /**
+     * 判断是否属于当前服务器该读取的配置
+     * 由于一个服务可能部署了多台机器，估不需要通过ip来比较，只要服务名，环境名一致，那么就表示当前机器需要更改配置了
+     * @return
+     */
+    public static boolean judgeServerProperty(String environmentName,String serviceName){
+        if(environmentName.equalsIgnoreCase(environment) &&
+           serviceName.equalsIgnoreCase(MyPlaceHolder.serviceName)){
+            return true;
+        }
+        return false;
     }
 
     public static String getValue(String key){

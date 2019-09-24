@@ -1,6 +1,6 @@
-package com.springmvc.service.impl;
+package com.configclient.service.impl;
 
-import com.springmvc.service.DataService;
+import com.configclient.service.DataService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

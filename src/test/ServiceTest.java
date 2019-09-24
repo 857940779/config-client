@@ -1,12 +1,9 @@
-import com.springmvc.common.MyPlaceHolder;
-import com.springmvc.service.DataService;
+import com.configclient.common.MyPlaceHolder;
+import com.configclient.service.DataService;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import javax.jms.MessageListener;
-import java.util.concurrent.Executors;
 
 /**
  * @Author: luohanwen
@@ -19,7 +16,7 @@ public class ServiceTest {
 
     @BeforeClass
     public static void init(){
-        ctx=new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+        ctx=new ClassPathXmlApplicationContext("classpath:configCenterContext.xml");
         dataService=ctx.getBean(DataService.class);
         System.out.println("-----------------");
     }

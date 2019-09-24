@@ -1,4 +1,4 @@
-package com.springmvc.model;
+package com.configclient.model;
 
 /**
  * @Author: luohanwen
